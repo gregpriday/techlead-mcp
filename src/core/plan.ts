@@ -12,7 +12,7 @@ import {
 } from "../server/schemas/outputSchemas.js";
 import type { TechLeadPlanInput } from "../types.js";
 import { callStructuredModel } from "./modelCall.js";
-import { ensurePlanRoute } from "./output.js";
+import { attachUsageAndCost, ensurePlanRoute } from "./output.js";
 
 export type PlanOptions = {
   config: TechLeadConfig;
@@ -69,7 +69,7 @@ ${dossier.text}`
     signal: options.signal
   });
 
-  const output = ensurePlanRoute(result.output, result.route);
+  const output = attachUsageAndCost(ensurePlanRoute(result.output, result.route), result.usage, result.route, options.config);
   if (!includeMarkdown) delete output.markdown;
   if (!includeExecutorPrompt) delete output.handoffPromptForExecutor;
   return output;

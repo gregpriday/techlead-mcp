@@ -40,6 +40,7 @@ export function createGeminiProvider(options: GeminiProviderOptions = {}): Model
           usage: response.usageMetadata
             ? {
                 inputTokens: response.usageMetadata.promptTokenCount,
+                cachedInputTokens: response.usageMetadata.cachedContentTokenCount,
                 outputTokens: response.usageMetadata.candidatesTokenCount,
                 reasoningTokens: response.usageMetadata.thoughtsTokenCount,
                 totalTokens: response.usageMetadata.totalTokenCount

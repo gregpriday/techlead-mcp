@@ -3,22 +3,22 @@ import { defaultConfig } from "../../src/config/defaults.js";
 import { plan } from "../../src/core/plan.js";
 import { review } from "../../src/core/review.js";
 import type { ProviderRegistry } from "../../src/providers/index.js";
-import type { ModelProvider } from "../../src/providers/types.js";
+import type { ModelProvider, ModelUsage } from "../../src/providers/types.js";
 import type { TechLeadPlanOutput, TechLeadReviewOutput } from "../../src/types.js";
 
-function providerWith(output: unknown): ModelProvider {
+function providerWith(output: unknown, usage?: ModelUsage): ModelProvider {
   return {
     id: "openai",
     isAvailable: () => true,
     async generateStructured<T>() {
-      return { output: output as T, rawText: JSON.stringify(output) };
+      return { output: output as T, rawText: JSON.stringify(output), usage };
     }
   };
 }
 
-function providers(output: unknown): ProviderRegistry {
+function providers(output: unknown, usage?: ModelUsage): ProviderRegistry {
   return {
-    openai: providerWith(output),
+    openai: providerWith(output, usage),
     anthropic: { id: "anthropic", isAvailable: () => false, generateStructured: async () => undefined as never },
     gemini: { id: "gemini", isAvailable: () => false, generateStructured: async () => undefined as never }
   };
@@ -106,12 +106,19 @@ describe("core plan/review", () => {
         task: "Add feature",
         files: [{ path: "src.ts", content: "export const value = 1;" }]
       },
-      { config: defaultConfig, providers: providers(planOutput), allowLocalFiles: false }
+      {
+        config: defaultConfig,
+        providers: providers(planOutput, { inputTokens: 1000, outputTokens: 200, totalTokens: 1200 }),
+        allowLocalFiles: false
+      }
     );
 
     expect(output.tool).toBe("techlead.plan");
     expect(output.route.provider).toBe("openai");
     expect(output.route.model).toBe(defaultConfig.models.openai.balanced);
+    expect(output.usage?.inputTokens).toBe(1000);
+    expect(output.cost?.totalUsd).toBe(0.00165);
+    expect(output.markdown).toContain("Estimated provider cost: USD $0.001650");
   });
 
   it("returns structured review output", async () => {
@@ -123,11 +130,17 @@ describe("core plan/review", () => {
         diff: "diff --git a/src.ts b/src.ts",
         testResults: [{ command: "npm test", status: "passed", output: "ok" }]
       },
-      { config: defaultConfig, providers: providers(reviewOutput), allowLocalFiles: false }
+      {
+        config: defaultConfig,
+        providers: providers(reviewOutput, { inputTokens: 2000, outputTokens: 100, totalTokens: 2100 }),
+        allowLocalFiles: false
+      }
     );
 
     expect(output.tool).toBe("techlead.review");
     expect(output.verdict).toBe("approved");
     expect(output.route.model).toBe(defaultConfig.models.openai.balanced);
+    expect(output.usage?.costUsd).toBe(0.00195);
+    expect(output.cost?.pricingSource).toBe("configured");
   });
 });

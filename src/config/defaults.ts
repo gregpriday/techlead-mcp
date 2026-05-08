@@ -1,6 +1,7 @@
 import type { ModelCatalog, ProviderModelCatalog } from "./modelCatalog.js";
 import { defaultModelCatalog } from "./modelCatalog.js";
 import type { ProviderId } from "../types.js";
+import type { TokenPrice } from "../telemetry/cost.js";
 
 export type TechLeadConfig = {
   defaultProvider: ProviderId | "auto";
@@ -35,6 +36,10 @@ export type TechLeadConfig = {
     logUsage: boolean;
     logCosts: boolean;
     logRawModelOutputs: boolean;
+  };
+  pricing: {
+    enabled: boolean;
+    modelPrices: Record<string, TokenPrice>;
   };
   http: {
     port: number;
@@ -78,6 +83,89 @@ export const defaultConfig: TechLeadConfig = {
     logUsage: true,
     logCosts: true,
     logRawModelOutputs: false
+  },
+  pricing: {
+    enabled: true,
+    modelPrices: {
+      "gpt-5.5": {
+        inputPerMillion: 5,
+        cachedInputPerMillion: 0.5,
+        outputPerMillion: 30,
+        source: "OpenAI configured default pricing for gpt-5.5 standard text tokens."
+      },
+      "gpt-5.4-mini": {
+        inputPerMillion: 0.75,
+        cachedInputPerMillion: 0.075,
+        outputPerMillion: 4.5,
+        source: "OpenAI configured default pricing for gpt-5.4-mini standard text tokens."
+      },
+      "gpt-5.4-nano": {
+        inputPerMillion: 0.2,
+        cachedInputPerMillion: 0.02,
+        outputPerMillion: 1.25,
+        source: "OpenAI configured default pricing for gpt-5.4-nano standard text tokens."
+      },
+      "gpt-5.2": {
+        inputPerMillion: 1.75,
+        cachedInputPerMillion: 0.175,
+        outputPerMillion: 14,
+        source: "OpenAI pricing page, standard text token rates."
+      },
+      "gpt-5.2-codex": {
+        inputPerMillion: 1.75,
+        cachedInputPerMillion: 0.175,
+        outputPerMillion: 14,
+        source: "OpenAI pricing page, standard text token rates."
+      },
+      "claude-opus-4-7": {
+        inputPerMillion: 5,
+        cacheCreationInputPerMillion: 6.25,
+        cachedInputPerMillion: 0.5,
+        outputPerMillion: 25,
+        source: "Anthropic pricing page, standard Claude Opus 4.7 token rates."
+      },
+      "claude-sonnet-4-6": {
+        inputPerMillion: 3,
+        cacheCreationInputPerMillion: 3.75,
+        cachedInputPerMillion: 0.3,
+        outputPerMillion: 15,
+        source: "Anthropic pricing page, standard Claude Sonnet 4.6 token rates."
+      },
+      "claude-haiku-4-5": {
+        inputPerMillion: 1,
+        cacheCreationInputPerMillion: 1.25,
+        cachedInputPerMillion: 0.1,
+        outputPerMillion: 5,
+        source: "Anthropic pricing page, standard Claude Haiku 4.5 token rates."
+      },
+      "gemini-3.1-pro-preview": {
+        inputPerMillion: 2,
+        cachedInputPerMillion: 0.2,
+        outputPerMillion: 12,
+        longContextThresholdTokens: 200_000,
+        longInputPerMillion: 4,
+        longOutputPerMillion: 18,
+        source: "Gemini pricing page, Gemini 3.1 Pro Preview standard text token rates."
+      },
+      "gemini-3-flash-preview": {
+        inputPerMillion: 0.5,
+        cachedInputPerMillion: 0.05,
+        outputPerMillion: 3,
+        source: "Gemini pricing page, Gemini 3 Flash Preview standard text token rates."
+      },
+      "gemini-3.1-flash-lite": {
+        inputPerMillion: 0.25,
+        cachedInputPerMillion: 0.025,
+        outputPerMillion: 1.5,
+        source: "Gemini pricing page, Gemini 3.1 Flash-Lite Preview standard text token rates."
+      },
+      "gemini-3.1-flash-lite-preview": {
+        inputPerMillion: 0.25,
+        cachedInputPerMillion: 0.025,
+        outputPerMillion: 1.5,
+        source: "Gemini pricing page, Gemini 3.1 Flash-Lite Preview standard text token rates."
+      }
+    }
   },
   http: {
     port: 8787,

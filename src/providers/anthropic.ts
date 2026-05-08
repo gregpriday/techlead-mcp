@@ -54,6 +54,8 @@ export function createAnthropicProvider(options: AnthropicProviderOptions = {}):
               response.usage.input_tokens +
               (response.usage.cache_creation_input_tokens ?? 0) +
               (response.usage.cache_read_input_tokens ?? 0),
+            cachedInputTokens: response.usage.cache_read_input_tokens ?? 0,
+            cacheCreationInputTokens: response.usage.cache_creation_input_tokens ?? 0,
             outputTokens: response.usage.output_tokens,
             totalTokens:
               response.usage.input_tokens +

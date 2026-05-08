@@ -4,6 +4,7 @@ import { pathToFileURL } from "node:url";
 import { resolve } from "node:path";
 import { defaultConfig, mergeProviderModels, type TechLeadConfig } from "./defaults.js";
 import type { JsonObject } from "../types.js";
+import type { TokenPrice } from "../telemetry/cost.js";
 
 const configCandidates = ["techlead.config.json", "techlead.config.ts", ".techleadrc.json"];
 
@@ -51,6 +52,14 @@ export function mergeConfig(base: TechLeadConfig, override: JsonObject): TechLea
     context: { ...base.context, ...(override.context as object | undefined) },
     security: { ...base.security, ...(override.security as object | undefined) },
     telemetry: { ...base.telemetry, ...(override.telemetry as object | undefined) },
+    pricing: {
+      ...base.pricing,
+      ...(override.pricing as object | undefined),
+      modelPrices: {
+        ...base.pricing.modelPrices,
+        ...((override.pricing as { modelPrices?: Record<string, TokenPrice> } | undefined)?.modelPrices ?? {})
+      }
+    },
     http: { ...base.http, ...(override.http as object | undefined) }
   };
 
@@ -58,7 +67,13 @@ export function mergeConfig(base: TechLeadConfig, override: JsonObject): TechLea
 }
 
 function applyEnv(config: TechLeadConfig): TechLeadConfig {
-  const next = { ...config, context: { ...config.context }, security: { ...config.security }, http: { ...config.http } };
+  const next = {
+    ...config,
+    context: { ...config.context },
+    security: { ...config.security },
+    pricing: { ...config.pricing, modelPrices: { ...config.pricing.modelPrices } },
+    http: { ...config.http }
+  };
 
   if (isProviderOrAuto(process.env.TECHLEAD_DEFAULT_PROVIDER)) {
     next.defaultProvider = process.env.TECHLEAD_DEFAULT_PROVIDER;
@@ -89,6 +104,9 @@ function applyEnv(config: TechLeadConfig): TechLeadConfig {
   }
   if (process.env.TECHLEAD_LOG_RAW_INPUTS) {
     next.security.logRawInputs = parseBoolean(process.env.TECHLEAD_LOG_RAW_INPUTS);
+  }
+  if (process.env.TECHLEAD_PRICING_ENABLED) {
+    next.pricing.enabled = parseBoolean(process.env.TECHLEAD_PRICING_ENABLED);
   }
 
   return next;

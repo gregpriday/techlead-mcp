@@ -48,6 +48,7 @@ export function createOpenAIProvider(options: OpenAIProviderOptions = {}): Model
           usage: response.usage
             ? {
                 inputTokens: response.usage.input_tokens,
+                cachedInputTokens: response.usage.input_tokens_details?.cached_tokens,
                 outputTokens: response.usage.output_tokens,
                 reasoningTokens: response.usage.output_tokens_details?.reasoning_tokens,
                 totalTokens: response.usage.total_tokens

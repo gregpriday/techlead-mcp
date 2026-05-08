@@ -12,7 +12,7 @@ import {
 } from "../server/schemas/outputSchemas.js";
 import type { TechLeadReviewInput } from "../types.js";
 import { callStructuredModel } from "./modelCall.js";
-import { ensureReviewRoute } from "./output.js";
+import { attachUsageAndCost, ensureReviewRoute } from "./output.js";
 
 export type ReviewOptions = {
   config: TechLeadConfig;
@@ -92,7 +92,7 @@ ${dossier.text}`
     signal: options.signal
   });
 
-  const output = ensureReviewRoute(result.output, result.route);
+  const output = attachUsageAndCost(ensureReviewRoute(result.output, result.route), result.usage, result.route, options.config);
   if (!includeMarkdown) delete output.markdown;
   if (!includeFixPrompt) delete output.fixPromptForExecutor;
   if (!includeApprovalChecklist) output.approvalChecklist = [];

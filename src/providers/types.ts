@@ -2,6 +2,8 @@ import type { JsonSchema, ProviderId, ProviderMessage } from "../types.js";
 
 export type ModelUsage = {
   inputTokens?: number;
+  cachedInputTokens?: number;
+  cacheCreationInputTokens?: number;
   outputTokens?: number;
   reasoningTokens?: number;
   totalTokens?: number;

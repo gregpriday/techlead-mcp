@@ -3,7 +3,9 @@ import { zodToJsonSchema } from "zod-to-json-schema";
 import type { ProviderRegistry } from "../providers/index.js";
 import { ProviderCallError, ProviderOutputParseError, ProviderUnavailableError } from "../providers/errors.js";
 import type { ModelProvider } from "../providers/types.js";
+import type { ModelUsage } from "../providers/types.js";
 import type { ProviderId, ProviderMessage, RouteMetadata } from "../types.js";
+import { mergeUsage } from "../telemetry/cost.js";
 
 export type StructuredModelCallInput<TSchema extends z.ZodTypeAny> = {
   providers: ProviderRegistry;
@@ -24,6 +26,7 @@ export type StructuredModelCallResult<T> = {
   output: T;
   rawText: string;
   route: RouteMetadata;
+  usage?: ModelUsage;
   attempts: Array<{ provider: ProviderId; model: string; error?: string }>;
 };
 
@@ -95,7 +98,7 @@ async function attemptWithRepair<TSchema extends z.ZodTypeAny>(
   });
 
   const parsed = input.schema.safeParse(first.output);
-  if (parsed.success) return { output: parsed.data, rawText: first.rawText };
+  if (parsed.success) return { output: parsed.data, rawText: first.rawText, usage: first.usage };
 
   const repair = await provider.generateStructured<unknown>({
     model: input.model,
@@ -130,5 +133,9 @@ The previous response failed schema validation. Return corrected JSON only. Do n
     );
   }
 
-  return { output: repairedParsed.data, rawText: repair.rawText };
+  return {
+    output: repairedParsed.data,
+    rawText: repair.rawText,
+    usage: mergeUsage(first.usage, repair.usage)
+  };
 }

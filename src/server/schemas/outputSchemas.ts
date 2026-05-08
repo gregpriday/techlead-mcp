@@ -13,6 +13,31 @@ export const confidenceSchema = z.object({
   explanation: z.string()
 });
 
+export const usageSchema = z.object({
+  inputTokens: z.number().int().nonnegative().optional(),
+  cachedInputTokens: z.number().int().nonnegative().optional(),
+  cacheCreationInputTokens: z.number().int().nonnegative().optional(),
+  outputTokens: z.number().int().nonnegative().optional(),
+  reasoningTokens: z.number().int().nonnegative().optional(),
+  totalTokens: z.number().int().nonnegative().optional(),
+  costUsd: z.number().nonnegative().optional()
+});
+
+export const costSchema = z.object({
+  currency: z.literal("USD"),
+  totalUsd: z.number().nonnegative().optional(),
+  inputUsd: z.number().nonnegative().optional(),
+  cachedInputUsd: z.number().nonnegative().optional(),
+  cacheCreationInputUsd: z.number().nonnegative().optional(),
+  outputUsd: z.number().nonnegative().optional(),
+  inputPerMillion: z.number().nonnegative().optional(),
+  cachedInputPerMillion: z.number().nonnegative().optional(),
+  cacheCreationInputPerMillion: z.number().nonnegative().optional(),
+  outputPerMillion: z.number().nonnegative().optional(),
+  pricingSource: z.enum(["configured", "unavailable"]),
+  note: z.string()
+});
+
 export const techLeadPlanOutputSchema = z.object({
   schemaVersion: z.literal("1.0"),
   tool: z.literal("techlead.plan"),
@@ -79,7 +104,9 @@ export const techLeadPlanOutputSchema = z.object({
   ),
   handoffPromptForExecutor: z.string().optional(),
   confidence: confidenceSchema,
-  markdown: z.string().optional()
+  markdown: z.string().optional(),
+  usage: usageSchema.optional(),
+  cost: costSchema.optional()
 });
 
 export const techLeadReviewOutputSchema = z.object({
@@ -143,7 +170,9 @@ export const techLeadReviewOutputSchema = z.object({
   nextActionsForExecutor: z.array(z.string()),
   fixPromptForExecutor: z.string().optional(),
   confidence: confidenceSchema,
-  markdown: z.string().optional()
+  markdown: z.string().optional(),
+  usage: usageSchema.optional(),
+  cost: costSchema.optional()
 });
 
 export type TechLeadPlanOutput = z.infer<typeof techLeadPlanOutputSchema>;

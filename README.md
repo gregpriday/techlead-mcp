@@ -7,6 +7,8 @@
 
 It supports local stdio mode and remote Streamable HTTP mode, uses provider-side structured outputs, and can route across OpenAI, Anthropic Claude, and Gemini.
 
+Each tool response includes the structured plan/review, provider token usage when returned by the API, and an estimated USD provider cost derived from the configured per-model pricing catalog. Provider billing dashboards remain authoritative.
+
 ## Install
 
 ```bash

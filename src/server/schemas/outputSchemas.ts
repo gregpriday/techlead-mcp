@@ -38,6 +38,29 @@ export const costSchema = z.object({
   note: z.string()
 });
 
+export const contextSummarySchema = z.object({
+  localMode: z.boolean(),
+  estimatedTokens: z.number().int().nonnegative(),
+  fileCount: z.number().int().nonnegative(),
+  changedFileCount: z.number().int().nonnegative().optional(),
+  instructionFileCount: z.number().int().nonnegative(),
+  missingFiles: z.array(z.string()),
+  warnings: z.array(z.string()),
+  truncated: z.array(
+    z.object({
+      path: z.string(),
+      originalTokens: z.number().int().nonnegative(),
+      keptTokens: z.number().int().nonnegative()
+    })
+  ),
+  redactions: z.array(
+    z.object({
+      type: z.string(),
+      count: z.number().int().nonnegative()
+    })
+  )
+});
+
 export const techLeadPlanOutputSchema = z.object({
   schemaVersion: z.literal("1.0"),
   tool: z.literal("techlead.plan"),
@@ -106,7 +129,8 @@ export const techLeadPlanOutputSchema = z.object({
   confidence: confidenceSchema,
   markdown: z.string().optional(),
   usage: usageSchema.optional(),
-  cost: costSchema.optional()
+  cost: costSchema.optional(),
+  contextSummary: contextSummarySchema.optional()
 });
 
 export const techLeadReviewOutputSchema = z.object({
@@ -172,7 +196,8 @@ export const techLeadReviewOutputSchema = z.object({
   confidence: confidenceSchema,
   markdown: z.string().optional(),
   usage: usageSchema.optional(),
-  cost: costSchema.optional()
+  cost: costSchema.optional(),
+  contextSummary: contextSummarySchema.optional()
 });
 
 export type TechLeadPlanOutput = z.infer<typeof techLeadPlanOutputSchema>;

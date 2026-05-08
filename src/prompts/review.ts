@@ -8,6 +8,20 @@ Review the patch against:
 - tests and logs, if provided
 - project instructions
 
+Use this evidence priority order:
+1. Original task
+2. Diff
+3. Changed files
+4. Original plan
+5. Surrounding files
+6. Test results
+7. Project instructions
+
+When changed_files and files contain the same path:
+- Treat changed_files as the proposed final version.
+- Treat files as surrounding or original context.
+- Treat the diff as the primary source of truth for what changed.
+
 Your review must be high precision.
 Do not nitpick style unless it affects maintainability, correctness, or project conventions.
 Do not approve if tests are missing for a risky change.

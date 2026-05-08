@@ -3,6 +3,7 @@ import { packContext } from "../context/packContext.js";
 import { estimateTokens } from "../context/estimateTokens.js";
 import { baseSystemPrompt } from "../prompts/base.js";
 import { planSystemPrompt } from "../prompts/plan.js";
+import { resolveGitHubIssueTask } from "../github/issues.js";
 import type { ProviderRegistry } from "../providers/index.js";
 import { routeModel } from "../router/route.js";
 import { techLeadPlanInputSchema } from "../server/schemas/inputSchemas.js";
@@ -12,7 +13,7 @@ import {
 } from "../server/schemas/outputSchemas.js";
 import type { TechLeadPlanInput } from "../types.js";
 import { callStructuredModel } from "./modelCall.js";
-import { attachUsageAndCost, ensurePlanRoute } from "./output.js";
+import { attachUsageAndCost, contextSummaryFromDossier, ensurePlanRoute } from "./output.js";
 
 export type PlanOptions = {
   config: TechLeadConfig;
@@ -23,11 +24,12 @@ export type PlanOptions = {
 
 export async function plan(input: TechLeadPlanInput, options: PlanOptions): Promise<TechLeadPlanOutput> {
   const parsed = techLeadPlanInputSchema.parse(input);
-  const dossier = await packContext(parsed, options.config, options.allowLocalFiles ?? true);
+  const task = parsed.task ?? (await resolveGitHubIssueTask(parsed.githubIssue!, options.config));
+  const dossier = await packContext({ ...parsed, task }, options.config, options.allowLocalFiles ?? true);
   const route = routeModel(
     {
       tool: "plan",
-      task: parsed.task,
+      task,
       fileCount: dossier.files.length,
       totalInputTokensEstimate: dossier.estimatedTokens,
       planningMode: parsed.planningMode,
@@ -70,6 +72,7 @@ ${dossier.text}`
   });
 
   const output = attachUsageAndCost(ensurePlanRoute(result.output, result.route), result.usage, result.route, options.config);
+  output.contextSummary = contextSummaryFromDossier(dossier);
   if (!includeMarkdown) delete output.markdown;
   if (!includeExecutorPrompt) delete output.handoffPromptForExecutor;
   return output;

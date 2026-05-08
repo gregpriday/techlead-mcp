@@ -119,6 +119,7 @@ describe("core plan/review", () => {
     expect(output.usage?.inputTokens).toBe(1000);
     expect(output.cost?.totalUsd).toBe(0.00165);
     expect(output.markdown).toContain("Estimated provider cost: USD $0.001650");
+    expect(output.contextSummary?.fileCount).toBe(1);
   });
 
   it("returns structured review output", async () => {
@@ -142,5 +143,6 @@ describe("core plan/review", () => {
     expect(output.route.model).toBe(defaultConfig.models.openai.balanced);
     expect(output.usage?.costUsd).toBe(0.00195);
     expect(output.cost?.pricingSource).toBe("configured");
+    expect(output.contextSummary?.changedFileCount).toBe(0);
   });
 });

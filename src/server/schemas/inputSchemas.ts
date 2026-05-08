@@ -27,7 +27,7 @@ export const techLeadFileSchema = z.object({
 export const instructionFileSchema = z.object({
   path: z.string().min(1),
   content: z.string(),
-  source: z.enum(["auto_loaded", "caller_supplied"])
+  source: z.enum(["auto_loaded", "caller_supplied"]).optional().default("caller_supplied")
 });
 
 export const testResultSchema = z.object({
@@ -43,6 +43,13 @@ export const providerPreferenceSchema = z.object({
   effort: z.enum(["low", "medium", "high", "xhigh", "max", "auto"]).optional()
 });
 
+export const githubIssueReferenceSchema = z.object({
+  owner: z.string().min(1).optional(),
+  repo: z.string().min(1).optional(),
+  repository: z.string().regex(/^[^/\s]+\/[^/\s]+$/, "repository must use owner/repo format").optional(),
+  issueNumber: z.number().int().positive()
+});
+
 const contextBudgetSchema = z.object({
   maxInputTokens: z.number().int().positive().optional(),
   maxFileTokens: z.number().int().positive().optional(),
@@ -50,9 +57,10 @@ const contextBudgetSchema = z.object({
   allowTruncation: z.boolean().optional()
 });
 
-export const techLeadPlanInputSchema = z.object({
+export const techLeadPlanInputShape = {
   cwd: z.string().min(1),
-  task: z.string().min(1),
+  task: z.string().min(1).optional(),
+  githubIssue: githubIssueReferenceSchema.optional(),
   files: z.array(techLeadFileSchema).default([]),
   instructionFiles: z.array(instructionFileSchema).optional(),
   autoLoadInstructions: z.boolean().optional(),
@@ -78,11 +86,17 @@ export const techLeadPlanInputSchema = z.object({
       includeRiskMatrix: z.boolean().optional()
     })
     .optional()
+};
+
+export const techLeadPlanInputSchema = z.object(techLeadPlanInputShape).refine(input => Boolean(input.task || input.githubIssue), {
+  message: "Either task or githubIssue is required",
+  path: ["task"]
 });
 
-export const techLeadReviewInputSchema = z.object({
+export const techLeadReviewInputShape = {
   cwd: z.string().min(1),
-  task: z.string().min(1),
+  task: z.string().min(1).optional(),
+  githubIssue: githubIssueReferenceSchema.optional(),
   files: z.array(techLeadFileSchema).default([]),
   plan: z.unknown().optional(),
   diff: z.string().optional(),
@@ -111,6 +125,7 @@ export const techLeadReviewInputSchema = z.object({
       maxInputTokens: z.number().int().positive().optional(),
       maxDiffTokens: z.number().int().positive().optional(),
       maxFileTokens: z.number().int().positive().optional(),
+      maxFiles: z.number().int().positive().optional(),
       allowTruncation: z.boolean().optional()
     })
     .optional(),
@@ -121,4 +136,9 @@ export const techLeadReviewInputSchema = z.object({
       includeApprovalChecklist: z.boolean().optional()
     })
     .optional()
+};
+
+export const techLeadReviewInputSchema = z.object(techLeadReviewInputShape).refine(input => Boolean(input.task || input.githubIssue), {
+  message: "Either task or githubIssue is required",
+  path: ["task"]
 });

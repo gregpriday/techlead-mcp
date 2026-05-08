@@ -5,7 +5,7 @@
 - `techlead.plan`
 - `techlead.review`
 
-It supports local stdio mode and remote Streamable HTTP mode, uses provider-side structured outputs, and can route across OpenAI, Anthropic Claude, and Gemini.
+It supports local stdio mode, uses provider-side structured outputs, and can route across OpenAI, Anthropic Claude, and Gemini.
 
 Each tool response includes the structured plan/review, provider token usage when returned by the API, and an estimated USD provider cost derived from the configured per-model pricing catalog. Provider billing dashboards remain authoritative.
 
@@ -31,12 +31,32 @@ Optional config:
 techlead-mcp init
 ```
 
+Optional GitHub issue task source:
+
+```bash
+TECHLEAD_GITHUB_TOKEN=github_pat_or_fine_grained_token
+```
+
+Then callers may omit `task` and provide:
+
+```json
+{
+  "cwd": "/repo",
+  "githubIssue": {
+    "repository": "owner/repo",
+    "issueNumber": 123
+  },
+  "files": []
+}
+```
+
+The server reads the issue body and issue comments through the GitHub REST API and uses that text as the task.
+
 ## Run
 
 ```bash
-techlead-mcp serve --transport stdio
-techlead-mcp serve --transport http --port 8787
+techlead-mcp serve
 techlead-mcp models
 ```
 
-Local stdio mode may read safe files under `cwd`. HTTP mode treats `cwd` as a logical label and requires callers to provide file contents.
+TechLead MCP is stdio-only because it is designed to run next to the repository and read safe files under configured local roots. By default, local reads are restricted to the process working directory. Do not run the server from a sensitive parent directory.

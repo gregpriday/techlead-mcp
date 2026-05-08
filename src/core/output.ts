@@ -64,6 +64,30 @@ export function attachUsageAndCost<T extends { markdown?: string; usage?: ModelU
   return next;
 }
 
+export function contextSummaryFromDossier(dossier: {
+  localMode: boolean;
+  estimatedTokens: number;
+  files: unknown[];
+  changedFiles?: unknown[];
+  instructionFiles: unknown[];
+  missingFiles: string[];
+  warnings: string[];
+  truncated: Array<{ path: string; originalTokens: number; keptTokens: number }>;
+  redactions: Array<{ type: string; count: number }>;
+}) {
+  return {
+    localMode: dossier.localMode,
+    estimatedTokens: dossier.estimatedTokens,
+    fileCount: dossier.files.length,
+    changedFileCount: dossier.changedFiles?.length,
+    instructionFileCount: dossier.instructionFiles.length,
+    missingFiles: dossier.missingFiles,
+    warnings: dossier.warnings,
+    truncated: dossier.truncated,
+    redactions: dossier.redactions
+  };
+}
+
 function appendCostToMarkdown(markdown: string, totalUsd: number, currency: string): string {
   const line = `Estimated provider cost: ${currency} $${totalUsd.toFixed(6)}`;
   if (markdown.includes("Estimated provider cost:")) return markdown;

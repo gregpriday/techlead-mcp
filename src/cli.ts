@@ -1,11 +1,11 @@
 #!/usr/bin/env node
+import "dotenv/config";
 import { readFile, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { Command } from "commander";
 import { defaultConfig } from "./config/defaults.js";
 import { loadConfig } from "./config/loadConfig.js";
-import { serveHttp } from "./server/transports/http.js";
 import { serveStdio } from "./server/transports/stdio.js";
 import { runEvalHarness } from "./evals/harness.js";
 
@@ -18,33 +18,10 @@ program
 
 program
   .command("serve")
-  .description("Start the TechLead MCP server.")
-  .option("-t, --transport <transport>", "Transport to use: stdio or http", process.env.TECHLEAD_TRANSPORT ?? "stdio")
-  .option("-p, --port <port>", "HTTP port", process.env.TECHLEAD_HTTP_PORT)
-  .option("--host <host>", "HTTP host", process.env.TECHLEAD_HTTP_HOST)
-  .action(async options => {
+  .description("Start the TechLead MCP server over stdio.")
+  .action(async () => {
     const config = await loadConfig();
-    const transport = String(options.transport);
-    if (transport === "stdio") {
-      await serveStdio({ config });
-      return;
-    }
-    if (transport === "http") {
-      const port = options.port ? Number(options.port) : config.http.port;
-      const host = options.host ? String(options.host) : config.http.host;
-      const server = await serveHttp({ config, port, host });
-      console.error(`TechLead MCP listening at ${server.url}`);
-      process.on("SIGINT", async () => {
-        await server.close();
-        process.exit(0);
-      });
-      process.on("SIGTERM", async () => {
-        await server.close();
-        process.exit(0);
-      });
-      return;
-    }
-    throw new Error(`Unsupported transport: ${transport}`);
+    await serveStdio({ config });
   });
 
 program

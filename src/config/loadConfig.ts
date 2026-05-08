@@ -60,7 +60,7 @@ export function mergeConfig(base: TechLeadConfig, override: JsonObject): TechLea
         ...((override.pricing as { modelPrices?: Record<string, TokenPrice> } | undefined)?.modelPrices ?? {})
       }
     },
-    http: { ...base.http, ...(override.http as object | undefined) }
+    github: { ...base.github, ...(override.github as object | undefined) }
   };
 
   return merged;
@@ -71,27 +71,17 @@ function applyEnv(config: TechLeadConfig): TechLeadConfig {
     ...config,
     context: { ...config.context },
     security: { ...config.security },
-    pricing: { ...config.pricing, modelPrices: { ...config.pricing.modelPrices } },
-    http: { ...config.http }
+    pricing: { ...config.pricing, modelPrices: { ...config.pricing.modelPrices } }
   };
 
   if (isProviderOrAuto(process.env.TECHLEAD_DEFAULT_PROVIDER)) {
     next.defaultProvider = process.env.TECHLEAD_DEFAULT_PROVIDER;
   }
-  if (process.env.TECHLEAD_HTTP_PORT) {
-    next.http.port = Number(process.env.TECHLEAD_HTTP_PORT);
-  }
-  if (process.env.TECHLEAD_HTTP_HOST) {
-    next.http.host = process.env.TECHLEAD_HTTP_HOST;
-  }
-  if (process.env.TECHLEAD_HTTP_BEARER_TOKEN) {
-    next.http.bearerToken = process.env.TECHLEAD_HTTP_BEARER_TOKEN;
-  }
   if (process.env.TECHLEAD_MAX_INPUT_TOKENS) {
-    next.context.maxInputTokens = Number(process.env.TECHLEAD_MAX_INPUT_TOKENS);
+    next.context.maxInputTokens = parsePositiveIntEnv("TECHLEAD_MAX_INPUT_TOKENS");
   }
   if (process.env.TECHLEAD_MAX_FILE_TOKENS) {
-    next.context.maxFileTokens = Number(process.env.TECHLEAD_MAX_FILE_TOKENS);
+    next.context.maxFileTokens = parsePositiveIntEnv("TECHLEAD_MAX_FILE_TOKENS");
   }
   if (process.env.TECHLEAD_REDACT_SECRETS) {
     next.security.redactSecrets = parseBoolean(process.env.TECHLEAD_REDACT_SECRETS);
@@ -108,6 +98,17 @@ function applyEnv(config: TechLeadConfig): TechLeadConfig {
   if (process.env.TECHLEAD_PRICING_ENABLED) {
     next.pricing.enabled = parseBoolean(process.env.TECHLEAD_PRICING_ENABLED);
   }
+  if (process.env.TECHLEAD_ALLOWED_ROOTS) {
+    next.security.allowedRoots = process.env.TECHLEAD_ALLOWED_ROOTS.split(",")
+      .map(root => root.trim())
+      .filter(Boolean);
+  }
+  if (process.env.TECHLEAD_ALLOW_HIDDEN_FILES) {
+    next.security.allowHiddenFiles = parseBoolean(process.env.TECHLEAD_ALLOW_HIDDEN_FILES);
+  }
+  if (process.env.TECHLEAD_ALLOW_HIDDEN_DIRECTORIES) {
+    next.security.allowHiddenDirectories = parseBoolean(process.env.TECHLEAD_ALLOW_HIDDEN_DIRECTORIES);
+  }
 
   return next;
 }
@@ -118,4 +119,13 @@ function parseBoolean(value: string): boolean {
 
 function isProviderOrAuto(value: string | undefined): value is TechLeadConfig["defaultProvider"] {
   return value === "auto" || value === "openai" || value === "anthropic" || value === "gemini";
+}
+
+function parsePositiveIntEnv(name: string): number {
+  const raw = process.env[name];
+  const value = Number(raw);
+  if (!Number.isInteger(value) || value <= 0) {
+    throw new Error(`${name} must be a positive integer`);
+  }
+  return value;
 }

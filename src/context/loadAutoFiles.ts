@@ -3,7 +3,7 @@ import { existsSync } from "node:fs";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import type { TechLeadConfig } from "../config/defaults.js";
 import type { InstructionFile, TechLeadFile } from "../types.js";
-import { isEnvFile, shouldIgnorePath, toPosixPath } from "./normalizeFiles.js";
+import { hasBlockedHiddenSegment, isEnvFile, shouldIgnorePath, toPosixPath } from "./normalizeFiles.js";
 
 const instructionFiles = [
   "AGENTS.md",
@@ -98,6 +98,7 @@ async function maybeRead(
   warnings: string[]
 ): Promise<string | undefined> {
   if (shouldIgnorePath(path)) return undefined;
+  if (hasBlockedHiddenSegment(path, config)) return undefined;
   if (isEnvFile(path) && !config.security.allowEnvFiles) return undefined;
 
   const absolute = resolve(root, path);

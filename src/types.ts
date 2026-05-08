@@ -2,6 +2,7 @@ import type { z } from "zod";
 import type {
   instructionFileSchema,
   providerPreferenceSchema,
+  githubIssueReferenceSchema,
   techLeadFileSchema,
   techLeadPlanInputSchema,
   techLeadReviewInputSchema,
@@ -19,6 +20,7 @@ export type TechLeadFile = z.infer<typeof techLeadFileSchema>;
 export type InstructionFile = z.infer<typeof instructionFileSchema>;
 export type TestResult = z.infer<typeof testResultSchema>;
 export type ProviderPreference = z.infer<typeof providerPreferenceSchema>;
+export type GitHubIssueReference = z.infer<typeof githubIssueReferenceSchema>;
 
 export type TechLeadPlanInput = z.infer<typeof techLeadPlanInputSchema>;
 export type TechLeadReviewInput = z.infer<typeof techLeadReviewInputSchema>;
@@ -48,8 +50,20 @@ export type ContextDossier = {
   localMode: boolean;
   text: string;
   files: TechLeadFile[];
+  changedFiles: TechLeadFile[];
   instructionFiles: InstructionFile[];
   estimatedTokens: number;
+  contextSummary?: {
+    localMode: boolean;
+    estimatedTokens: number;
+    fileCount: number;
+    changedFileCount?: number;
+    instructionFileCount: number;
+    missingFiles: string[];
+    warnings: string[];
+    truncated: Array<{ path: string; originalTokens: number; keptTokens: number }>;
+    redactions: Array<{ type: string; count: number }>;
+  };
   redactions: Array<{ type: string; count: number }>;
   truncated: Array<{ path: string; originalTokens: number; keptTokens: number }>;
   missingFiles: string[];

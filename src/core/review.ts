@@ -3,6 +3,7 @@ import { packContext } from "../context/packContext.js";
 import { estimateTokens } from "../context/estimateTokens.js";
 import { baseSystemPrompt } from "../prompts/base.js";
 import { reviewSystemPrompt } from "../prompts/review.js";
+import { resolveGitHubIssueTask } from "../github/issues.js";
 import type { ProviderRegistry } from "../providers/index.js";
 import { routeModel } from "../router/route.js";
 import { techLeadReviewInputSchema } from "../server/schemas/inputSchemas.js";
@@ -12,7 +13,7 @@ import {
 } from "../server/schemas/outputSchemas.js";
 import type { TechLeadReviewInput } from "../types.js";
 import { callStructuredModel } from "./modelCall.js";
-import { attachUsageAndCost, ensureReviewRoute } from "./output.js";
+import { attachUsageAndCost, contextSummaryFromDossier, ensureReviewRoute } from "./output.js";
 
 export type ReviewOptions = {
   config: TechLeadConfig;
@@ -23,10 +24,11 @@ export type ReviewOptions = {
 
 export async function review(input: TechLeadReviewInput, options: ReviewOptions): Promise<TechLeadReviewOutput> {
   const parsed = techLeadReviewInputSchema.parse(input);
+  const task = parsed.task ?? (await resolveGitHubIssueTask(parsed.githubIssue!, options.config));
   const dossier = await packContext(
     {
       cwd: parsed.cwd,
-      task: parsed.task,
+      task,
       files: parsed.files,
       changedFiles: parsed.changedFiles,
       instructionFiles: parsed.instructionFiles,
@@ -44,7 +46,7 @@ export async function review(input: TechLeadReviewInput, options: ReviewOptions)
   const route = routeModel(
     {
       tool: "review",
-      task: parsed.task,
+      task,
       fileCount: dossier.files.length,
       totalInputTokensEstimate: dossier.estimatedTokens,
       diffTokensEstimate: estimateTokens(parsed.diff),
@@ -93,6 +95,7 @@ ${dossier.text}`
   });
 
   const output = attachUsageAndCost(ensureReviewRoute(result.output, result.route), result.usage, result.route, options.config);
+  output.contextSummary = contextSummaryFromDossier(dossier);
   if (!includeMarkdown) delete output.markdown;
   if (!includeFixPrompt) delete output.fixPromptForExecutor;
   if (!includeApprovalChecklist) output.approvalChecklist = [];

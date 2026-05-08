@@ -3,7 +3,7 @@ import type { TechLeadConfig } from "../../config/defaults.js";
 import { plan } from "../../core/plan.js";
 import { toMcpResult } from "../../core/output.js";
 import type { ProviderRegistry } from "../../providers/index.js";
-import { techLeadPlanInputSchema } from "../schemas/inputSchemas.js";
+import { techLeadPlanInputShape } from "../schemas/inputSchemas.js";
 import { techLeadPlanOutputSchema } from "../schemas/outputSchemas.js";
 
 export function registerPlanTool(
@@ -18,7 +18,7 @@ export function registerPlanTool(
       title: "TechLead Plan",
       description:
         "Use this tool when you need a senior technical lead to create an implementation plan before editing code. Provide cwd, the task or issue, relevant files and contents, project instructions if available, constraints, known problems, and previous attempts when relevant. The tool returns a structured plan for a cheaper executor model, including target files, ordered steps, risks, acceptance criteria, and tests to run.",
-      inputSchema: techLeadPlanInputSchema.shape,
+      inputSchema: techLeadPlanInputShape,
       outputSchema: techLeadPlanOutputSchema.shape,
       annotations: {
         readOnlyHint: true,
@@ -28,8 +28,20 @@ export function registerPlanTool(
       }
     },
     async args => {
-      const output = await plan(args, { config, providers, allowLocalFiles });
-      return toMcpResult(output);
+      try {
+        const output = await plan(args, { config, providers, allowLocalFiles });
+        return toMcpResult(output);
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `TechLead plan failed: ${(error as Error).message}`
+            }
+          ],
+          isError: true
+        };
+      }
     }
   );
 }

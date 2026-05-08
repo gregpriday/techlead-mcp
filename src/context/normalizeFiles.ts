@@ -3,6 +3,7 @@ import { existsSync } from "node:fs";
 import { isAbsolute, normalize, relative, resolve, sep } from "node:path";
 import type { TechLeadConfig } from "../config/defaults.js";
 import type { TechLeadFile } from "../types.js";
+import { assertCwdWithinAllowedRoots } from "./allowedRoots.js";
 
 const ignoredPathSegments = new Set(["node_modules", "dist", "build", ".git", "coverage", "vendor"]);
 
@@ -29,7 +30,11 @@ export async function normalizeFiles({
 }: NormalizeFilesOptions): Promise<NormalizeFilesResult> {
   const resolvedCwd = allowLocalFiles ? resolve(cwd) : cwd;
   const localMode = allowLocalFiles && existsSync(resolvedCwd) && (await isDirectory(resolvedCwd));
-  const rootRealPath = localMode ? await realpath(resolvedCwd) : undefined;
+  const rootRealPath = localMode
+    ? config.security.restrictLocalReadsToAllowedRoots
+      ? await assertCwdWithinAllowedRoots(resolvedCwd, config.security.allowedRoots)
+      : await realpath(resolvedCwd)
+    : undefined;
   const byPath = new Map<string, TechLeadFile>();
   const missingFiles: string[] = [];
   const warnings: string[] = [];
@@ -46,6 +51,10 @@ export async function normalizeFiles({
     }
     if (isEnvFile(normalizedPath) && !config.security.allowEnvFiles) {
       warnings.push(`Ignored env file by policy: ${normalizedPath}`);
+      continue;
+    }
+    if (hasBlockedHiddenSegment(normalizedPath, config)) {
+      warnings.push(`Ignored hidden path by policy: ${normalizedPath}`);
       continue;
     }
 
@@ -97,6 +106,15 @@ export function shouldIgnorePath(path: string): boolean {
 export function isEnvFile(path: string): boolean {
   const basename = path.split("/").at(-1) ?? path;
   return basename === ".env" || basename.startsWith(".env.");
+}
+
+export function hasBlockedHiddenSegment(path: string, config: TechLeadConfig): boolean {
+  const segments = path.split("/");
+  return segments.some((segment, index) => {
+    if (!segment.startsWith(".") || segment === "." || segment === "..") return false;
+    const isFile = index === segments.length - 1;
+    return isFile ? !config.security.allowHiddenFiles : !config.security.allowHiddenDirectories;
+  });
 }
 
 async function readSafeFile(

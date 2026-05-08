@@ -10,6 +10,7 @@ export type BuildDossierInput = {
   reviewerFocus?: string[];
   instructionFiles: InstructionFile[];
   files: TechLeadFile[];
+  changedFiles?: TechLeadFile[];
   diff?: string;
   plan?: unknown;
   testResults?: TestResult[];
@@ -55,6 +56,25 @@ export function buildDossier(input: BuildDossierInput): string {
       );
     }
     parts.push("  </files>");
+    parts.push("");
+  }
+
+  if (input.changedFiles?.length) {
+    parts.push("  <changed_files>");
+    for (const file of input.changedFiles) {
+      appendFile(
+        parts,
+        file.path,
+        file.kind,
+        file.importance,
+        file.reason,
+        file.content ?? file.summary ?? "[content not provided]",
+        4,
+        file.lineStart,
+        file.lineEnd
+      );
+    }
+    parts.push("  </changed_files>");
     parts.push("");
   }
 

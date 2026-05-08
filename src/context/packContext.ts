@@ -1,7 +1,7 @@
 import type { TechLeadConfig } from "../config/defaults.js";
 import type { ContextDossier, InstructionFile, TechLeadFile, TestResult } from "../types.js";
 import { buildDossier } from "./buildDossier.js";
-import { estimateFileTokens, estimateTokens } from "./estimateTokens.js";
+import { estimateTokens } from "./estimateTokens.js";
 import { loadAutoFiles } from "./loadAutoFiles.js";
 import { normalizeFiles } from "./normalizeFiles.js";
 import { rankFiles } from "./rankFiles.js";
@@ -37,12 +37,28 @@ export async function packContext(
   config: TechLeadConfig,
   allowLocalFiles: boolean
 ): Promise<ContextDossier> {
+  enforceProvidedContentLimits(input, config);
+
   const normalized = await normalizeFiles({
     cwd: input.cwd,
-    files: [...input.files, ...(input.changedFiles ?? [])],
+    files: input.files,
     allowLocalFiles,
     config
   });
+  const normalizedChanged = input.changedFiles?.length
+    ? await normalizeFiles({
+        cwd: input.cwd,
+        files: input.changedFiles,
+        allowLocalFiles,
+        config
+      })
+    : {
+        cwd: normalized.cwd,
+        localMode: normalized.localMode,
+        files: [] as TechLeadFile[],
+        missingFiles: [] as string[],
+        warnings: [] as string[]
+      };
 
   const shouldAutoLoad = input.autoLoadInstructions ?? config.context.autoLoadInstructions;
   const auto = shouldAutoLoad
@@ -55,8 +71,10 @@ export async function packContext(
   ]);
 
   let files = rankFiles(dedupeFiles([...normalized.files, ...auto.projectFiles]));
+  let changedFiles = rankFiles(dedupeFiles(normalizedChanged.files));
   const maxFiles = input.contextBudget?.maxFiles ?? config.context.maxFiles;
   if (files.length > maxFiles) files = files.slice(0, maxFiles);
+  if (changedFiles.length > maxFiles) changedFiles = changedFiles.slice(0, maxFiles);
 
   const maxFileTokens = input.contextBudget?.maxFileTokens ?? config.context.maxFileTokens;
   const allowTruncation = input.contextBudget?.allowTruncation ?? config.context.allowTruncation;
@@ -76,6 +94,26 @@ export async function packContext(
       if (result.truncated) {
         truncated.push({
           path: file.path,
+          originalTokens: result.originalTokens,
+          keptTokens: result.keptTokens
+        });
+      }
+    }
+    return { ...file, content };
+  });
+  changedFiles = changedFiles.map(file => {
+    let content = file.content;
+    if (content !== undefined && config.security.redactSecrets) {
+      const redacted = redactSecrets(content);
+      content = redacted.text;
+      redactionSummaries.push(redacted.redactions);
+    }
+    if (content !== undefined && allowTruncation) {
+      const result = truncateToTokenBudget(content, maxFileTokens);
+      content = result.text;
+      if (result.truncated) {
+        truncated.push({
+          path: `[changed] ${file.path}`,
           originalTokens: result.originalTokens,
           keptTokens: result.keptTokens
         });
@@ -116,10 +154,11 @@ export async function packContext(
     reviewerFocus: input.reviewerFocus,
     instructionFiles: redactedInstructions,
     files,
+    changedFiles,
     diff,
     plan: input.plan,
     testResults: input.testResults,
-    warnings: [...normalized.warnings, ...auto.warnings]
+    warnings: [...normalized.warnings, ...normalizedChanged.warnings, ...auto.warnings]
   });
 
   const maxInputTokens = input.contextBudget?.maxInputTokens ?? config.context.maxInputTokens;
@@ -134,12 +173,13 @@ export async function packContext(
     localMode: normalized.localMode,
     text: dossier,
     files,
+    changedFiles,
     instructionFiles: redactedInstructions,
-    estimatedTokens: estimateTokens(dossier) + estimateFileTokens(files),
+    estimatedTokens: estimateTokens(dossier),
     redactions: mergeRedactions(...redactionSummaries),
     truncated,
-    missingFiles: normalized.missingFiles,
-    warnings: [...normalized.warnings, ...auto.warnings]
+    missingFiles: [...normalized.missingFiles, ...normalizedChanged.missingFiles],
+    warnings: [...normalized.warnings, ...normalizedChanged.warnings, ...auto.warnings]
   };
 }
 
@@ -158,4 +198,26 @@ function dedupeInstructions(files: InstructionFile[]): InstructionFile[] {
     byPath.set(file.path, byPath.get(file.path) ?? file);
   }
   return [...byPath.values()];
+}
+
+function enforceProvidedContentLimits(input: PackContextInput, config: TechLeadConfig): void {
+  let total = 0;
+  const add = (label: string, value: string | undefined): void => {
+    if (value === undefined) return;
+    const bytes = Buffer.byteLength(value, "utf8");
+    total += bytes;
+    if (bytes > config.context.maxFileBytes) {
+      throw new Error(`${label} exceeds maxFileBytes (${config.context.maxFileBytes})`);
+    }
+    if (total > config.context.maxTotalBytes) {
+      throw new Error(`Provided context exceeds maxTotalBytes (${config.context.maxTotalBytes})`);
+    }
+  };
+
+  for (const file of input.files) add(`file ${file.path}`, file.content);
+  for (const file of input.changedFiles ?? []) add(`changed file ${file.path}`, file.content);
+  for (const file of input.instructionFiles ?? []) add(`instruction file ${file.path}`, file.content);
+  add("diff", input.diff);
+  add("plan", typeof input.plan === "string" ? input.plan : input.plan === undefined ? undefined : JSON.stringify(input.plan));
+  for (const result of input.testResults ?? []) add(`test output ${result.command}`, result.output);
 }

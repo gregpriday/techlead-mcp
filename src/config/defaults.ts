@@ -30,6 +30,10 @@ export type TechLeadConfig = {
     allowEnvFiles: boolean;
     allowSymlinksOutsideCwd: boolean;
     logRawInputs: boolean;
+    allowedRoots: string[];
+    restrictLocalReadsToAllowedRoots: boolean;
+    allowHiddenFiles: boolean;
+    allowHiddenDirectories: boolean;
   };
   telemetry: {
     enabled: boolean;
@@ -41,12 +45,10 @@ export type TechLeadConfig = {
     enabled: boolean;
     modelPrices: Record<string, TokenPrice>;
   };
-  http: {
-    port: number;
-    host: string;
-    bearerToken?: string;
-    allowedOrigins: string[];
-    rateLimitPerMinute: number;
+  github: {
+    apiBaseUrl: string;
+    tokenEnvVars: string[];
+    maxComments: number;
   };
 };
 
@@ -76,7 +78,11 @@ export const defaultConfig: TechLeadConfig = {
     redactSecrets: true,
     allowEnvFiles: false,
     allowSymlinksOutsideCwd: false,
-    logRawInputs: false
+    logRawInputs: false,
+    allowedRoots: [process.cwd()],
+    restrictLocalReadsToAllowedRoots: true,
+    allowHiddenFiles: false,
+    allowHiddenDirectories: false
   },
   telemetry: {
     enabled: true,
@@ -167,11 +173,10 @@ export const defaultConfig: TechLeadConfig = {
       }
     }
   },
-  http: {
-    port: 8787,
-    host: "127.0.0.1",
-    allowedOrigins: ["http://localhost", "http://127.0.0.1"],
-    rateLimitPerMinute: 60
+  github: {
+    apiBaseUrl: "https://api.github.com",
+    tokenEnvVars: ["TECHLEAD_GITHUB_TOKEN", "GITHUB_TOKEN", "GH_TOKEN"],
+    maxComments: 100
   }
 };
 

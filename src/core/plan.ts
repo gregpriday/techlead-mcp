@@ -26,7 +26,7 @@ export async function plan(input: TechLeadPlanInput, options: PlanOptions): Prom
   const parsed = techLeadPlanInputSchema.parse(input);
   const task = parsed.task ?? (await resolveGitHubIssueTask(parsed.githubIssue!, options.config));
   const dossier = await packContext({ ...parsed, task }, options.config, options.allowLocalFiles ?? true);
-  const route = routeModel(
+  const route = await routeModel(
     {
       tool: "plan",
       task,
@@ -37,7 +37,8 @@ export async function plan(input: TechLeadPlanInput, options: PlanOptions): Prom
       providerPreference: parsed.providerPreference
     },
     options.config,
-    options.providers
+    options.providers,
+    options.signal
   );
 
   const includeMarkdown = parsed.outputPreference?.includeMarkdown ?? true;

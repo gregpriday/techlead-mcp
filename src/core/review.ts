@@ -43,7 +43,7 @@ export async function review(input: TechLeadReviewInput, options: ReviewOptions)
     options.allowLocalFiles ?? true
   );
 
-  const route = routeModel(
+  const route = await routeModel(
     {
       tool: "review",
       task,
@@ -55,7 +55,8 @@ export async function review(input: TechLeadReviewInput, options: ReviewOptions)
       providerPreference: parsed.providerPreference
     },
     options.config,
-    options.providers
+    options.providers,
+    options.signal
   );
 
   const includeMarkdown = parsed.outputPreference?.includeMarkdown ?? true;

@@ -52,6 +52,16 @@ Then callers may omit `task` and provide:
 
 The server reads the issue body and issue comments through the GitHub REST API and uses that text as the task.
 
+Optional cheap-model router:
+
+```bash
+TECHLEAD_OPTIONAL_LLM_ROUTER=true
+TECHLEAD_ROUTER_PROVIDER=openai
+TECHLEAD_DEFAULT_MODEL_TIER=balanced
+```
+
+When enabled, the router model receives the resolved task text, including GitHub issue text when `githubIssue` is used, plus context size and risk signals. It may choose OpenAI, Anthropic, or Gemini for the actual plan/review call, but deterministic safety rules still force max-tier routing for auth, security, migrations, data loss, failing tests, and similar high-risk work.
+
 ## Run
 
 ```bash

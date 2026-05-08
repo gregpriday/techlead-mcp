@@ -69,6 +69,7 @@ export function mergeConfig(base: TechLeadConfig, override: JsonObject): TechLea
 function applyEnv(config: TechLeadConfig): TechLeadConfig {
   const next = {
     ...config,
+    routing: { ...config.routing },
     context: { ...config.context },
     security: { ...config.security },
     pricing: { ...config.pricing, modelPrices: { ...config.pricing.modelPrices } }
@@ -98,6 +99,18 @@ function applyEnv(config: TechLeadConfig): TechLeadConfig {
   if (process.env.TECHLEAD_PRICING_ENABLED) {
     next.pricing.enabled = parseBoolean(process.env.TECHLEAD_PRICING_ENABLED);
   }
+  if (process.env.TECHLEAD_ROUTING_ENABLED) {
+    next.routing.enabled = parseBoolean(process.env.TECHLEAD_ROUTING_ENABLED);
+  }
+  if (process.env.TECHLEAD_OPTIONAL_LLM_ROUTER) {
+    next.routing.optionalLlmRouter = parseBoolean(process.env.TECHLEAD_OPTIONAL_LLM_ROUTER);
+  }
+  if (isProvider(process.env.TECHLEAD_ROUTER_PROVIDER)) {
+    next.routing.routerProvider = process.env.TECHLEAD_ROUTER_PROVIDER;
+  }
+  if (isModelTier(process.env.TECHLEAD_DEFAULT_MODEL_TIER)) {
+    next.routing.defaultTier = process.env.TECHLEAD_DEFAULT_MODEL_TIER;
+  }
   if (process.env.TECHLEAD_ALLOWED_ROOTS) {
     next.security.allowedRoots = process.env.TECHLEAD_ALLOWED_ROOTS.split(",")
       .map(root => root.trim())
@@ -119,6 +132,14 @@ function parseBoolean(value: string): boolean {
 
 function isProviderOrAuto(value: string | undefined): value is TechLeadConfig["defaultProvider"] {
   return value === "auto" || value === "openai" || value === "anthropic" || value === "gemini";
+}
+
+function isProvider(value: string | undefined): value is TechLeadConfig["routing"]["routerProvider"] {
+  return value === "openai" || value === "anthropic" || value === "gemini";
+}
+
+function isModelTier(value: string | undefined): value is TechLeadConfig["routing"]["defaultTier"] {
+  return value === "balanced" || value === "max";
 }
 
 function parsePositiveIntEnv(name: string): number {

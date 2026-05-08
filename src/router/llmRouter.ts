@@ -13,6 +13,8 @@ export const routerOutputSchema = z.object({
   confidence: z.number().min(0).max(1)
 });
 
+export type RouterOutput = z.infer<typeof routerOutputSchema>;
+
 export type RouterLlmInput = {
   tool: ToolKind;
   task: string;
@@ -30,7 +32,7 @@ export async function runOptionalLlmRouter(
   config: TechLeadConfig,
   providers: ProviderRegistry,
   signal?: AbortSignal
-): Promise<z.infer<typeof routerOutputSchema> | undefined> {
+): Promise<RouterOutput | undefined> {
   if (!config.routing.optionalLlmRouter) return undefined;
   const provider = providers[config.routing.routerProvider];
   if (!provider?.isAvailable()) return undefined;

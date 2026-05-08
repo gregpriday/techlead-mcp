@@ -1,0 +1,64 @@
+{
+  "name": "@gpriday/techlead-mcp",
+  "version": "0.1.0",
+  "description": "A read-only MCP server that gives coding agents frontier-quality implementation planning and review.",
+  "type": "module",
+  "bin": {
+    "techlead-mcp": "./dist/cli.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "AGENTS.md",
+    ".env.example"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
+    "build": "npm run clean && tsc -p tsconfig.json",
+    "prepack": "npm run build",
+    "dev": "tsx src/cli.ts",
+    "serve": "node dist/cli.js serve",
+    "models": "node dist/cli.js models",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json",
+    "test": "vitest run tests",
+    "test:watch": "vitest tests"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "coding-agent",
+    "planning",
+    "code-review"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.11"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.95.1",
+    "@google/genai": "^2.0.0",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "commander": "^14.0.2",
+    "openai": "^6.37.0",
+    "zod": "^3.25.76",
+    "zod-to-json-schema": "^3.25.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.14"
+  }
+}
